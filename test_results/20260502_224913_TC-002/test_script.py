@@ -1,0 +1,84 @@
+import os
+import asyncio
+import json
+from playwright.async_api import async_playwright, expect
+
+SCREENSHOT_DIR = os.environ.get('SCREENSHOT_DIR', '.')
+BASE_URL = os.environ.get('BASE_URL', 'http://localhost:5173')
+TIMEOUT = int(os.environ.get('TIMEOUT', '30000'))
+
+async def main():
+    step = 0
+    steps_total = 3
+    error_msg = ''
+    
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
+        page = await context.new_page()
+        page.set_default_timeout(TIMEOUT)
+        
+        try:
+            # Step 1: Navigate to base URL
+            step += 1
+            await page.goto(BASE_URL)
+            await page.wait_for_load_state('networkidle')
+            await page.screenshot(path=os.path.join(SCREENSHOT_DIR, f'step_{step:02d}.png'))
+            
+            # Step 2: Send POST request to login API
+            step += 1
+            login_url = f"{BASE_URL}/api/auth/login"
+            request_body = {
+                "username": "user001",
+                "password": "123456",
+                "role": "1"
+            }
+            
+            response = await page.request.post(login_url, data=request_body)
+            await page.screenshot(path=os.path.join(SCREENSHOT_DIR, f'step_{step:02d}.png'))
+            
+            # Step 3: Verify response
+            step += 1
+            status_code = response.status
+            response_body = await response.json()
+            
+            # Verify HTTP status code
+            if status_code != 200:
+                raise AssertionError(f"Expected status code 200, got {status_code}")
+            
+            # Verify response body structure
+            if response_body.get('code') != 200:
+                raise AssertionError(f"Expected code 200, got {response_body.get('code')}")
+            
+            if response_body.get('message') != 'success':
+                raise AssertionError(f"Expected message 'success', got {response_body.get('message')}")
+            
+            data = response_body.get('data', {})
+            if not data.get('token'):
+                raise AssertionError("Missing token in response data")
+            
+            if not data.get('userId'):
+                raise AssertionError("Missing userId in response data")
+            
+            user = data.get('user', {})
+            if user.get('role') != 1:
+                raise AssertionError(f"Expected user role 1, got {user.get('role')}")
+            
+            await page.screenshot(path=os.path.join(SCREENSHOT_DIR, f'step_{step:02d}.png'))
+            
+        except Exception as e:
+            error_msg = str(e)
+            await page.screenshot(path=os.path.join(SCREENSHOT_DIR, f'step_{step:02d}_error.png'))
+        finally:
+            await browser.close()
+    
+    passed = not error_msg
+    result = {
+        "passed": passed,
+        "message": error_msg or '所有步骤通过',
+        "steps_completed": step,
+        "steps_total": steps_total
+    }
+    print('###TEST_RESULT###' + json.dumps(result, ensure_ascii=False))
+
+asyncio.run(main())
