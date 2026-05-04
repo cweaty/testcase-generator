@@ -475,3 +475,4 @@ pip install -r requirements.txt
 - [OpenAI](https://openai.com/) - AI 能力支持
 - [python-docx](https://python-docx.readthedocs.io/) - Word 文档处理
 - [openpyxl](https://openpyxl.readthedocs.io/) - Excel 文件生成
+# Railway rebuild trigger
