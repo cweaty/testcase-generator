@@ -3,8 +3,13 @@
 AI 测试用例生成器 v3.4 - 启动脚本
 """
 import socket
+import sys
 import uvicorn
 from src.config import settings
+
+# Windows GBK 编码兼容
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 
 def find_available_port(preferred: int, fallback: int = 8088) -> int:
