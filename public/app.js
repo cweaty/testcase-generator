@@ -6,7 +6,7 @@
 // ========== 后端 API 地址配置 ==========
 // 部署时修改此处为后端服务的实际地址，例如 "https://your-backend.railway.app"
 // 本地开发时留空即可（使用相对路径，由同源服务器处理）
-const API_BASE = '';
+const API_BASE = 'https://testcase-generator-production.up.railway.app';
 
 // ========== 全局状态 ==========
 let currentDocId = null;
