@@ -476,3 +476,4 @@ pip install -r requirements.txt
 - [python-docx](https://python-docx.readthedocs.io/) - Word 文档处理
 - [openpyxl](https://openpyxl.readthedocs.io/) - Excel 文件生成
 # Railway rebuild trigger
+# redeploy Tue May  5 02:47:42     2026
