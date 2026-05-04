@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 测试用例生成器 v4.0</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <span class="logo-icon">🧪</span>
+                <h1>TestCase AI</h1>
+            </div>
+            <nav>
+                <a href="#" class="nav-item active" data-view="upload"><span class="nav-icon">📤</span><span class="nav-text">文档上传</span></a>
+                <a href="#" class="nav-item" data-view="testcases"><span class="nav-icon">📋</span><span class="nav-text">测试用例</span></a>
+                <a href="#" class="nav-item" data-view="suites"><span class="nav-icon">📦</span><span class="nav-text">测试套件</span></a>
+                <a href="#" class="nav-item" data-view="executor"><span class="nav-icon">🤖</span><span class="nav-text">自动化测试</span></a>
+                <a href="#" class="nav-item" data-view="dashboard"><span class="nav-icon">📊</span><span class="nav-text">执行仪表盘</span></a>
+                <a href="#" class="nav-item" data-view="reports"><span class="nav-icon">📄</span><span class="nav-text">测试报告</span></a>
+                <a href="#" class="nav-item" data-view="stats"><span class="nav-icon">📈</span><span class="nav-text">数据概览</span></a>
+                <a href="#" class="nav-item" data-view="trash"><span class="nav-icon">🗑️</span><span class="nav-text">回收站</span></a>
+                <a href="#" class="nav-item" data-view="settings"><span class="nav-icon">⚙️</span><span class="nav-text">设置</span></a>
+                <a href="#" class="nav-item" data-view="env"><span class="nav-icon">🔧</span><span class="nav-text">环境检测</span></a>
+                <a href="#" class="nav-item" data-view="logs"><span class="nav-icon">📜</span><span class="nav-text">操作日志</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换主题">
+                    <span class="theme-icon" id="themeIcon">🌙</span>
+                </div>
+                <div class="version-badge">v4.0</div>
+                <small>Powered by AI · <kbd>?</kbd> 快捷键</small>
+            </div>
+        </aside>
+
+        <button class="mobile-menu-btn" id="menuBtn" onclick="toggleSidebar()">☰</button>
+
+        <main class="content">
+            <!-- ======== 文档上传 ======== -->
+            <div id="view-upload" class="view active">
+                <div class="view-header">
+                    <div><h2>📤 文档中心</h2><p>上传需求文档或接口文档，AI 自动生成测试用例</p></div>
+                    <div class="header-actions">
+                        <div class="search-box">
+                            <input type="text" id="docSearch" placeholder="搜索文档... (Ctrl+K)" onkeyup="debounceDocSearch()">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快捷统计条 -->
+                <div class="quick-stats" id="quickStats">
+                    <div class="qs-item"><span class="qs-value" id="qsDocs">-</span><span class="qs-label">文档</span></div>
+                    <div class="qs-divider"></div>
+                    <div class="qs-item"><span class="qs-value" id="qsTcTotal">-</span><span class="qs-label">用例</span></div>
+                    <div class="qs-divider"></div>
+                    <div class="qs-item"><span class="qs-dot qs-p0"></span><span class="qs-value" id="qsP0">-</span><span class="qs-label">P0</span></div>
+                    <div class="qs-item"><span class="qs-dot qs-p1"></span><span class="qs-value" id="qsP1">-</span><span class="qs-label">P1</span></div>
+                    <div class="qs-item"><span class="qs-dot qs-p2"></span><span class="qs-value" id="qsP2">-</span><span class="qs-label">P2</span></div>
+                    <div class="qs-item"><span class="qs-dot qs-p3"></span><span class="qs-value" id="qsP3">-</span><span class="qs-label">P3</span></div>
+                </div>
+
+                <!-- 上传双栏 -->
+                <div class="upload-dual">
+                    <div class="upload-card glass upload-left">
+                        <div class="upload-area" id="dropZone">
+                            <div class="upload-icon-wrapper"><div class="upload-icon">📁</div><div class="upload-pulse"></div></div>
+                            <p class="upload-text">拖拽文件到此处</p>
+                            <p class="upload-hint">或点击选择文件</p>
+                            <input type="file" id="fileInput" accept=".md,.docx,.json,.txt,.pdf,.xlsx,.csv" hidden>
+                            <button class="btn btn-gradient" onclick="document.getElementById('fileInput').click()"><span>选择文件</span></button>
+                        </div>
+                        <div class="format-tags">
+                            <span class="ftag ftag-md">.md</span>
+                            <span class="ftag ftag-docx">.docx</span>
+                            <span class="ftag ftag-json">.json</span>
+                            <span class="ftag ftag-txt">.txt</span>
+                            <span class="ftag ftag-pdf">.pdf</span>
+                            <span class="ftag ftag-xlsx">.xlsx</span>
+                            <span class="ftag ftag-csv">.csv</span>
+                            <span class="ftag-size">最大 50MB</span>
+                        </div>
+                        <div class="upload-progress" id="uploadProgress" style="display:none">
+                            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                            <span class="progress-text" id="progressText">上传中...</span>
+                        </div>
+                    </div>
+                    <div class="upload-card glass upload-right">
+                        <div class="upload-right-header"><h3>📝 粘贴内容</h3></div>
+                        <div class="upload-right-form">
+                            <div class="form-row">
+                                <div class="form-group"><label>文档标题</label><input type="text" id="textTitle" placeholder="输入文档标题"></div>
+                                <div class="form-group" style="max-width:180px"><label>类型</label>
+                                    <select id="textType"><option value="text">普通文档</option><option value="markdown">Markdown</option><option value="openapi">OpenAPI</option></select>
+                                </div>
+                            </div>
+                            <div class="form-group form-group-grow"><label>文档内容</label><textarea id="textContent" placeholder="粘贴需求文档或接口文档内容..."></textarea></div>
+                            <button class="btn btn-gradient btn-full" id="submitTextBtn"><span>📤 提交文档</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h3>📂 已上传文档</h3>
+                        <div class="section-actions"><button class="btn btn-outline btn-sm" onclick="loadDocuments()" title="刷新">🔄</button></div>
+                    </div>
+                    <div id="documentsList" class="documents-grid">
+                        <div class="loading-skeleton"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
+                    </div>
+                    <div id="docPagination" class="pagination"></div>
+                </div>
+            </div>
+
+            <!-- ======== 测试用例 ======== -->
+            <div id="view-testcases" class="view">
+                <div class="view-header">
+                    <div><h2>📋 测试用例管理</h2><p id="tcStatsText">暂无数据</p></div>
+                </div>
+                <div class="stats-cards" id="statsCards" style="display:none">
+                    <div class="stat-card glass"><div class="stat-value" id="statTotal">0</div><div class="stat-label">总计</div></div>
+                    <div class="stat-card glass stat-p0"><div class="stat-value" id="statP0">0</div><div class="stat-label">P0 冒烟</div></div>
+                    <div class="stat-card glass stat-p1"><div class="stat-value" id="statP1">0</div><div class="stat-label">P1 核心</div></div>
+                    <div class="stat-card glass stat-p2"><div class="stat-value" id="statP2">0</div><div class="stat-label">P2 一般</div></div>
+                    <div class="stat-card glass stat-p3"><div class="stat-value" id="statP3">0</div><div class="stat-label">P3 边界</div></div>
+                </div>
+                <div class="toolbar glass">
+                    <div class="toolbar-left">
+                        <select id="sortBy" class="filter-select" onchange="tcPage=1;loadTestcases()" title="排序方式">
+                            <option value="priority">按优先级</option>
+                            <option value="id">按ID</option>
+                            <option value="title">按标题</option>
+                            <option value="module">按模块</option>
+                            <option value="case_type">按类型</option>
+                            <option value="created_at">按时间</option>
+                        </select>
+                        <button class="btn btn-icon" id="sortOrderBtn" onclick="toggleSortOrder()" title="排序方向" style="font-size:14px">↑</button>
+                        <select id="filterDoc" class="filter-select"><option value="">全部文档</option></select>
+                        <select id="filterPriority" class="filter-select">
+                            <option value="">全部优先级</option><option value="P0">P0</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option>
+                        </select>
+                        <select id="filterType" class="filter-select">
+                            <option value="">全部类型</option><option value="功能测试">功能测试</option><option value="边界测试">边界测试</option>
+                            <option value="异常测试">异常测试</option><option value="流程测试">流程测试</option><option value="接口测试">接口测试</option>
+                        </select>
+                        <div class="search-box">
+                            <input type="text" id="tcSearch" placeholder="搜索用例..." onkeyup="debounceTcSearch()">
+                            <span class="search-icon">🔍</span>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <div class="view-mode-toggle">
+                            <button class="btn btn-icon active" id="tableViewBtn" onclick="setViewMode('table')" title="表格视图">📋</button>
+                            <button class="btn btn-icon" id="cardViewBtn" onclick="setViewMode('card')" title="卡片视图">🃏</button>
+                        </div>
+                        <button class="btn btn-outline btn-sm" onclick="openImportModal()">📥 导入</button>
+                        <button class="btn btn-outline btn-sm" id="batchCopyBtn" style="display:none" onclick="batchCopyTestcases()">📋 批量复制</button>
+                        <button class="btn btn-outline btn-sm" id="batchPriorityBtn" style="display:none" onclick="batchChangePriority()">🏷 改优先级</button>
+                        <button class="btn btn-danger btn-sm" id="batchDeleteTcBtn" style="display:none" onclick="batchDeleteTestcases()">🗑 批量删除</button>
+                        <button class="btn btn-outline btn-sm" onclick="clearAllTestcases()" title="清空全部">🧹 清空</button>
+                        <div class="export-dropdown">
+                            <button class="btn btn-success btn-sm" onclick="toggleExportMenu()">📊 导出 ▾</button>
+                            <div class="dropdown-menu" id="exportMenu">
+                                <a href="#" onclick="doExport('excel')">📊 Excel (.xlsx)</a>
+                                <a href="#" onclick="doExport('csv')">📄 CSV (.csv)</a>
+                                <a href="#" onclick="doExport('json')">🔧 JSON (.json)</a>
+                                <a href="#" onclick="doExport('markdown')">📝 Markdown (.md)</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="filterChips" class="filter-chips-container">
+                    <div id="filterChipsList" class="filter-chips"></div>
+                    <button class="chip-clear-all" id="clearAllFiltersBtn" onclick="clearAllFilters()">清除所有筛选</button>
+                </div>
+                <div id="testcasesContainer" class="table-container glass">
+                    <div class="empty-state"><div class="empty-icon">📋</div><p>暂无测试用例，请先上传文档并生成</p></div>
+                </div>
+                <div id="tcPagination" class="pagination"></div>
+            </div>
+
+            <!-- ======== 回收站 ======== -->
+            <div id="view-trash" class="view">
+                <div class="view-header">
+                    <div><h2>🗑️ 回收站</h2><p>已删除的测试用例可在此恢复或永久删除</p></div>
+                    <div class="header-actions" style="display:flex;gap:8px">
+                        <button class="btn btn-outline btn-sm" onclick="restoreAllTrash()">♻️ 全部恢复</button>
+                        <button class="btn btn-outline btn-sm" onclick="loadTrash()">🔄 刷新</button>
+                        <button class="btn btn-danger btn-sm" onclick="emptyTrash()">🧹 清空回收站</button>
+                    </div>
+                </div>
+                <div id="trashContainer" class="table-container glass">
+                    <div class="empty-state"><div class="empty-icon">🗑️</div><p>回收站为空</p></div>
+                </div>
+                <div id="trashPagination" class="pagination"></div>
+            </div>
+
+            <!-- ======== 数据概览 ======== -->
+            <div id="view-stats" class="view">
+                <div class="view-header"><h2>📊 数据概览</h2><p>项目全局数据统计</p></div>
+                <div id="statsContent" class="stats-dashboard">
+                    <div class="loading-skeleton"><div class="skeleton-card" style="height:300px"></div></div>
+                </div>
+            </div>
+
+            <!-- ======== AI 设置 ======== -->
+            <div id="view-settings" class="view">
+                <div class="view-header"><h2>⚙️ AI 配置</h2><p>配置 AI 模型参数以生成测试用例</p></div>
+                <div class="settings-grid">
+                    <div class="settings-card glass">
+                        <h4>🔗 连接设置</h4>
+                        <div class="form-group">
+                            <label>API Base URL</label>
+                            <input type="text" id="cfgBaseUrl" placeholder="https://api.openai.com/v1">
+                            <small>OpenAI 兼容的 API 地址</small>
+                        </div>
+                        <div class="form-group">
+                            <label>API Key</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="cfgApiKey" placeholder="sk-...">
+                                <button class="toggle-password" onclick="toggleApiKeyVisibility()" title="显示/隐藏 API Key">👁</button>
+                            </div>
+                            <small id="apiKeyStatus"></small>
+                        </div>
+                        <div class="form-group">
+                            <label>模型名称</label>
+                            <input type="text" id="cfgModel" placeholder="gpt-4o">
+                            <small>如 gpt-4o, gpt-4o-mini, deepseek-chat, qwen-plus 等</small>
+                        </div>
+                    </div>
+                    <div class="settings-card glass">
+                        <h4>🎛 生成参数</h4>
+                        <div class="form-group">
+                            <label>温度 (Temperature)</label>
+                            <div class="range-wrapper">
+                                <input type="range" id="cfgTemp" min="0" max="1" step="0.1" value="0.3" oninput="document.getElementById('tempVal').textContent=this.value">
+                                <span class="range-value" id="tempVal">0.3</span>
+                            </div>
+                            <small>越低越确定（0.0），越高越创意（1.0）</small>
+                        </div>
+                        <div class="form-group">
+                            <label>最大 Token 数</label>
+                            <input type="number" id="cfgMaxTokens" value="16000" min="2000" max="128000" step="1000">
+                            <small>生成内容的最大 Token 上限</small>
+                        </div>
+                        <div class="form-group">
+                            <label>默认测试类型</label>
+                            <div class="checkbox-grid">
+                                <label class="checkbox-item"><input type="checkbox" name="cfgDefaultType" value="功能测试" checked> <span>✅ 功能</span></label>
+                                <label class="checkbox-item"><input type="checkbox" name="cfgDefaultType" value="边界测试" checked> <span>📏 边界</span></label>
+                                <label class="checkbox-item"><input type="checkbox" name="cfgDefaultType" value="异常测试" checked> <span>⚠️ 异常</span></label>
+                                <label class="checkbox-item"><input type="checkbox" name="cfgDefaultType" value="流程测试" checked> <span>🔄 流程</span></label>
+                                <label class="checkbox-item"><input type="checkbox" name="cfgDefaultType" value="接口测试"> <span>🔌 接口</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="settings-card glass settings-actions">
+                        <button class="btn btn-gradient btn-full" id="saveConfigBtn"><span>💾 保存全部配置</span></button>
+                        <button class="btn btn-outline btn-full" onclick="testAIConnection()"><span>🔌 测试连接</span></button>
+                    </div>
+                    <div class="settings-card glass" style="grid-column: 1 / -1">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                            <h4 style="margin:0">📝 Prompt 模板管理</h4>
+                            <button class="btn btn-outline btn-sm" onclick="openCreateTemplateModal()">➕ 新建模板</button>
+                        </div>
+                        <div id="templateList" class="template-list">
+                            <div class="loading-text">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== 自动化测试 ======== -->
+            <div id="view-executor" class="view">
+                <div class="view-header">
+                    <div><h2>🤖 自动化测试执行</h2><p>选择测试用例，AI 自动生成 Playwright 脚本并执行</p></div>
+                    <div class="header-actions" style="display:flex;gap:8px;align-items:center">
+                        <div class="form-group" style="margin:0">
+                            <input type="text" id="execBaseUrl" placeholder="目标网址 http://localhost:3000" value="http://localhost:3000" style="min-width:260px">
+                        </div>
+                        <select id="execTimeout" class="filter-select" title="超时时间">
+                            <option value="15000">15秒</option>
+                            <option value="30000" selected>30秒</option>
+                            <option value="60000">60秒</option>
+                            <option value="120000">120秒</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" onclick="loadExecHistory()">📜 执行历史</button>
+                    </div>
+                </div>
+
+                <!-- 用例选择区 -->
+                <div class="section">
+                    <div class="section-header">
+                        <h3>📋 选择测试用例</h3>
+                        <div class="section-actions">
+                            <select id="execFilterDoc" class="filter-select" onchange="loadExecTestcases()"><option value="">全部文档</option></select>
+                            <select id="execFilterPriority" class="filter-select" onchange="loadExecTestcases()">
+                                <option value="">全部优先级</option><option value="P0">P0</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option>
+                            </select>
+                            <button class="btn btn-outline btn-sm" onclick="execSelectAll()">全选</button>
+                            <button class="btn btn-outline btn-sm" onclick="execDeselectAll()">取消全选</button>
+                            <span id="execSelectedCount" class="badge" style="margin-left:8px">已选 0 个</span>
+                        </div>
+                    </div>
+                    <div id="execTestcasesList" class="table-container glass">
+                        <div class="loading-skeleton"><div class="skeleton-card"></div></div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                        <button class="btn btn-gradient btn-lg" id="startExecBtn" onclick="startExecution()"><span>🚀 开始执行</span></button>
+                        <button class="btn btn-outline" id="previewCodeBtn" onclick="previewExecCode()" title="预览第一个选中用例的 Playwright 代码">👁 预览代码</button>
+                        <span id="execStatus" style="color:var(--text-secondary);font-size:13px"></span>
+                    </div>
+                </div>
+
+                <!-- 执行进度 & 结果 -->
+                <div id="execProgressSection" class="section" style="display:none">
+                    <div class="section-header">
+                        <h3>⚡ 执行进度</h3>
+                        <div class="section-actions">
+                            <div class="progress-bar" style="width:200px;height:8px"><div class="progress-fill" id="execProgressFill" style="width:0%"></div></div>
+                            <span id="execProgressText" style="font-size:13px;color:var(--text-secondary)">0/0</span>
+                        </div>
+                    </div>
+                    <div id="execResultsContainer" class="exec-results-grid"></div>
+                </div>
+
+                <!-- 执行历史 -->
+                <div id="execHistorySection" class="section" style="display:none">
+                    <div class="section-header">
+                        <h3>📜 执行历史</h3>
+                        <div class="section-actions">
+                            <button class="btn btn-danger btn-sm" onclick="clearExecHistory()">🧹 清空历史</button>
+                            <button class="btn btn-outline btn-sm" onclick="$('#execHistorySection').hide()">✕ 关闭</button>
+                        </div>
+                    </div>
+                    <div id="execHistoryList" class="table-container glass"></div>
+                </div>
+            </div>
+
+            <!-- ======== 测试套件 ======== -->
+            <div id="view-suites" class="view">
+                <div class="view-header">
+                    <div><h2>📦 测试套件</h2><p>将测试用例组合成套件，一键执行完整测试</p></div>
+                    <div class="header-actions">
+                        <button class="btn btn-gradient btn-sm" onclick="openCreateSuiteModal()">➕ 新建套件</button>
+                    </div>
+                </div>
+                <div id="suitesContainer" class="documents-grid"></div>
+            </div>
+
+            <!-- ======== 执行仪表盘 ======== -->
+            <div id="view-dashboard" class="view">
+                <div class="view-header"><h2>📊 执行仪表盘</h2><p>自动化测试执行统计与趋势分析</p></div>
+                <div id="dashboardContent" class="stats-dashboard">
+                    <div class="loading-skeleton"><div class="skeleton-card" style="height:300px"></div></div>
+                </div>
+            </div>
+
+            <!-- ======== 测试报告 ======== -->
+            <div id="view-reports" class="view">
+                <div class="view-header"><h2>📄 测试报告</h2><p>自动生成的执行报告</p></div>
+                <div id="reportsContainer" class="table-container glass"></div>
+                <div id="reportsPagination" class="pagination"></div>
+            </div>
+
+            <!-- ======== 环境检测 ======== -->
+            <div id="view-env" class="view">
+                <div class="view-header"><h2>🔧 环境检测</h2><p>检查运行自动化测试所需的依赖环境</p></div>
+                <div id="envContent" class="settings-grid"></div>
+            </div>
+
+            <!-- ======== 操作日志 ======== -->
+            <div id="view-logs" class="view">
+                <div class="view-header">
+                    <div><h2>📜 操作日志</h2><p>查看所有操作记录</p></div>
+                    <div class="header-actions">
+                        <select id="logActionFilter" class="filter-select" onchange="logPage=1;loadLogs()">
+                            <option value="">全部操作</option>
+                            <option value="upload">上传</option>
+                            <option value="generate">生成</option>
+                            <option value="delete">删除</option>
+                            <option value="copy">复制</option>
+                            <option value="import">导入</option>
+                            <option value="restore">恢复</option>
+                            <option value="config">配置</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" onclick="loadLogs()">🔄 刷新</button>
+                    </div>
+                </div>
+                <div id="logsContainer" class="table-container glass">
+                    <div class="empty-state"><div class="empty-icon">📜</div><p>暂无操作记录</p></div>
+                </div>
+                <div id="logsPagination" class="pagination"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 生成弹窗 -->
+    <div id="generateModal" class="modal">
+        <div class="modal-backdrop" onclick="closeGenerateModal()"></div>
+        <div class="modal-content glass">
+            <div class="modal-header"><h3>🤖 AI 生成测试用例</h3><span id="draftIndicator" class="draft-indicator">草稿已保存</span><button class="modal-close" id="closeGenerateBtn" onclick="closeGenerateModal()">&times;</button></div>
+            <div class="modal-body">
+                <div class="gen-doc-name"><span class="label">文档：</span><strong id="genDocName"></strong></div>
+                <div class="form-group">
+                    <label>Prompt 模板</label>
+                    <div class="prompt-template-row">
+                        <select id="genPromptTemplate" class="filter-select" style="flex:1" onchange="onPromptTemplateChange()">
+                            <option value="">默认模板</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" onclick="previewPromptTemplate()" title="预览模板内容">👁</button>
+                    </div>
+                    <div id="promptPreview" class="prompt-preview" style="display:none"></div>
+                    <div class="form-group" style="margin-top:8px">
+                        <label style="font-size:11px;cursor:pointer" onclick="toggleCustomPrompt()">
+                            ✏️ 自定义 Prompt <span id="customPromptArrow">▸</span>
+                        </label>
+                        <textarea id="genCustomPrompt" rows="4" placeholder="留空使用选中的模板，输入内容将覆盖模板..." style="display:none"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>选择测试用例类型</label>
+                    <div class="checkbox-grid">
+                        <label class="checkbox-item"><input type="checkbox" name="testType" value="功能测试" checked> <span>✅ 功能测试</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="testType" value="边界测试" checked> <span>📏 边界测试</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="testType" value="异常测试" checked> <span>⚠️ 异常测试</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="testType" value="流程测试" checked> <span>🔄 流程测试</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="testType" value="接口测试"> <span>🔌 接口测试</span></label>
+                    </div>
+                </div>
+                <div id="generateStatus" class="status-area"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeGenerateModal()">取消</button>
+                <button class="btn btn-gradient" id="startGenerateBtn"><span>🚀 开始生成</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑弹窗 -->
+    <div id="editModal" class="modal">
+        <div class="modal-backdrop" onclick="closeEditModal()"></div>
+        <div class="modal-content modal-lg glass">
+            <div class="modal-header"><h3>✏️ 编辑测试用例</h3><button class="modal-close" onclick="closeEditModal()">&times;</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-row">
+                    <div class="form-group"><label>用例编号</label><input type="text" id="editCaseId"></div>
+                    <div class="form-group"><label>所属模块</label><input type="text" id="editModule"></div>
+                </div>
+                <div class="form-group"><label>用例标题</label><input type="text" id="editTitle"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>优先级</label>
+                        <select id="editPriority"><option value="P0">P0</option><option value="P1">P1</option><option value="P2">P2</option><option value="P3">P3</option></select>
+                    </div>
+                    <div class="form-group"><label>用例类型</label>
+                        <select id="editType"><option value="功能测试">功能测试</option><option value="边界测试">边界测试</option><option value="异常测试">异常测试</option><option value="流程测试">流程测试</option><option value="接口测试">接口测试</option></select>
+                    </div>
+                </div>
+                <div class="form-group"><label>前置条件</label><textarea id="editPrecondition" rows="2"></textarea></div>
+                <div class="form-group"><label>测试步骤</label><textarea id="editSteps" rows="4"></textarea></div>
+                <div class="form-group"><label>预期结果</label><textarea id="editExpected" rows="3"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+                <button class="btn btn-gradient" id="saveEditBtn"><span>💾 保存</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量改优先级弹窗 -->
+    <div id="priorityModal" class="modal">
+        <div class="modal-backdrop" onclick="closePriorityModal()"></div>
+        <div class="modal-content glass" style="max-width:400px">
+            <div class="modal-header"><h3>🏷 批量修改优先级</h3><button class="modal-close" onclick="closePriorityModal()">&times;</button></div>
+            <div class="modal-body">
+                <p style="margin-bottom:16px;color:var(--text-secondary)">将选中的 <strong id="priorityCount">0</strong> 条用例修改为：</p>
+                <div class="priority-options">
+                    <label class="radio-card" onclick="selectPriority('P0')"><span class="priority-badge P0">P0</span><span>冒烟测试</span></label>
+                    <label class="radio-card" onclick="selectPriority('P1')"><span class="priority-badge P1">P1</span><span>核心功能</span></label>
+                    <label class="radio-card" onclick="selectPriority('P2')"><span class="priority-badge P2">P2</span><span>一般功能</span></label>
+                    <label class="radio-card" onclick="selectPriority('P3')"><span class="priority-badge P3">P3</span><span>边界/低</span></label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closePriorityModal()">取消</button>
+                <button class="btn btn-gradient" onclick="confirmBatchPriority()"><span>确认修改</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入弹窗 -->
+    <div id="importModal" class="modal">
+        <div class="modal-backdrop" onclick="closeImportModal()"></div>
+        <div class="modal-content modal-lg glass">
+            <div class="modal-header"><h3>📥 导入测试用例</h3><button class="modal-close" onclick="closeImportModal()">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>导入方式</label>
+                    <div class="checkbox-grid">
+                        <label class="checkbox-item"><input type="radio" name="importMode" value="file" checked onchange="switchImportMode()"> <span>📁 上传文件</span></label>
+                        <label class="checkbox-item"><input type="radio" name="importMode" value="paste" onchange="switchImportMode()"> <span>📝 粘贴JSON</span></label>
+                    </div>
+                </div>
+                <div id="importFileArea">
+                    <div class="form-group">
+                        <div class="upload-area-sm" id="importDropZone">
+                            <p style="font-size:14px;margin-bottom:8px">📁 拖拽 JSON 文件到此处，或 <a href="#" onclick="document.getElementById('importFileInput').click();return false">点击选择</a></p>
+                            <input type="file" id="importFileInput" accept=".json" hidden>
+                        </div>
+                    </div>
+                </div>
+                <div id="importPasteArea" style="display:none">
+                    <div class="form-group">
+                        <label>粘贴 JSON 数据</label>
+                        <textarea id="importJsonText" rows="8" placeholder='格式：[{"title":"用例标题","steps":"步骤","expected_result":"预期结果","priority":"P1","case_type":"功能测试"}]'></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>关联文档</label>
+                    <select id="importDocId" class="filter-select"><option value="">不关联文档</option></select>
+                </div>
+                <div id="importStatus" class="status-area"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-gradient" onclick="doImport()"><span>📥 开始导入</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 套件创建/编辑弹窗 -->
+    <div id="suiteModal" class="modal">
+        <div class="modal-backdrop" onclick="closeSuiteModal()"></div>
+        <div class="modal-content glass">
+            <div class="modal-header"><h3 id="suiteModalTitle">📦 新建测试套件</h3><button class="modal-close" onclick="closeSuiteModal()">&times;</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="suiteEditId">
+                <div class="form-group"><label>套件名称</label><input type="text" id="suiteName" placeholder="如：登录模块回归测试"></div>
+                <div class="form-group"><label>描述</label><textarea id="suiteDesc" rows="2" placeholder="套件描述（可选）"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group"><label>目标网址</label><input type="text" id="suiteBaseUrl" value="http://localhost:3000"></div>
+                    <div class="form-group" style="max-width:180px"><label>超时时间</label>
+                        <select id="suiteTimeout"><option value="15000">15秒</option><option value="30000" selected>30秒</option><option value="60000">60秒</option><option value="120000">120秒</option></select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeSuiteModal()">取消</button>
+                <button class="btn btn-gradient" onclick="saveSuite()"><span>💾 保存</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 套件详情弹窗 -->
+    <div id="suiteDetailModal" class="modal">
+        <div class="modal-backdrop" onclick="closeSuiteDetailModal()"></div>
+        <div class="modal-content modal-xl glass">
+            <div class="modal-header"><h3 id="suiteDetailTitle">📦 套件详情</h3><button class="modal-close" onclick="closeSuiteDetailModal()">&times;</button></div>
+            <div class="modal-body" id="suiteDetailContent"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeSuiteDetailModal()">关闭</button>
+                <button class="btn btn-gradient" id="runSuiteBtn" onclick="runSuiteFromDetail()"><span>🚀 执行套件</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 文档预览弹窗 -->
+    <div id="previewModal" class="modal">
+        <div class="modal-backdrop" onclick="closePreviewModal()"></div>
+        <div class="modal-content modal-xl glass">
+            <div class="modal-header"><h3>📄 文档预览</h3><button class="modal-close" onclick="closePreviewModal()">&times;</button></div>
+            <div class="modal-body">
+                <div class="doc-preview-meta" id="previewMeta"></div>
+                <pre class="doc-preview-content" id="previewContent"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- 快捷键帮助弹窗 -->
+    <div id="helpModal" class="modal">
+        <div class="modal-backdrop" onclick="closeHelpModal()"></div>
+        <div class="modal-content glass">
+            <div class="modal-header"><h3>⌨️ 快捷键</h3><button class="modal-close" onclick="closeHelpModal()">&times;</button></div>
+            <div class="modal-body">
+                <div class="shortcut-grid">
+                    <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>K</kbd><span>命令面板</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>U</kbd><span>上传文档</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>G</kbd><span>AI 生成用例</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>E</kbd><span>导出 Excel</span></div>
+                    <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>F</kbd><span>搜索用例</span></div>
+                    <div class="shortcut-item"><kbd>1</kbd> ~ <kbd>9</kbd><span>切换视图</span></div>
+                    <div class="shortcut-item"><kbd>?</kbd><span>显示快捷键帮助</span></div>
+                    <div class="shortcut-item"><kbd>Esc</kbd><span>关闭弹窗</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模板编辑弹窗 -->
+    <div id="templateModal" class="modal">
+        <div class="modal-backdrop" onclick="closeTemplateModal()"></div>
+        <div class="modal-content modal-lg glass">
+            <div class="modal-header"><h3 id="templateModalTitle">📝 新建 Prompt 模板</h3><button class="modal-close" onclick="closeTemplateModal()">&times;</button></div>
+            <div class="modal-body">
+                <input type="hidden" id="tplEditId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>模板名称</label>
+                        <input type="text" id="tplName" placeholder="如：安全测试专项、性能测试等">
+                    </div>
+                    <div class="form-group" style="max-width:200px">
+                        <label>设为默认</label>
+                        <select id="tplDefault"><option value="0">否</option><option value="1">是</option></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Prompt 内容</label>
+                    <textarea id="tplContent" rows="10" placeholder="输入 System Prompt 内容...&#10;&#10;示例：&#10;你是一位安全测试专家...&#10;&#10;要求：&#10;1. 覆盖 XSS/SQL注入&#10;2. 测试越权访问&#10;3. ..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeTemplateModal()">取消</button>
+                <button class="btn btn-gradient" onclick="saveTemplate()"><span>💾 保存模板</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 全局拖拽上传覆盖层 -->
+    <div id="globalDropOverlay" class="global-drop-overlay">
+        <div class="drop-overlay-content">
+            <div class="drop-overlay-icon">📥</div>
+            <div class="drop-overlay-title">拖拽文件到此处上传</div>
+            <div class="drop-overlay-files" id="globalDropFiles"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- Command Palette (v3.3) -->
+    <div id="commandPaletteModal" class="modal command-palette-modal">
+        <div class="modal-backdrop" onclick="closeCommandPalette()"></div>
+        <div class="cmd-palette glass">
+            <div class="cmd-palette-header">
+                <span class="cmd-palette-icon">🔍</span>
+                <input type="text" id="cmdPaletteInput" placeholder="输入命令..." autocomplete="off">
+                <kbd>ESC</kbd>
+            </div>
+            <div id="cmdPaletteList" class="cmd-list"></div>
+            <div class="cmd-palette-footer">
+                <span><kbd>↑↓</kbd> 导航</span>
+                <span><kbd>Enter</kbd> 执行</span>
+                <span><kbd>Esc</kbd> 关闭</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Panel (v3.3) -->
+    <div id="historyPanel" class="history-panel">
+        <div class="history-panel-header">
+            <h3>🕘 版本历史</h3>
+            <button class="modal-close" onclick="closeHistoryPanel()">&times;</button>
+        </div>
+        <div id="historyContent" class="history-content"></div>
+    </div>
+
+    <!-- 代码预览弹窗 -->
+    <div id="codePreviewModal" class="modal">
+        <div class="modal-backdrop" onclick="closeCodePreviewModal()"></div>
+        <div class="modal-content modal-xl glass">
+            <div class="modal-header"><h3>📝 Playwright 代码预览</h3><button class="modal-close" onclick="closeCodePreviewModal()">&times;</button></div>
+            <div class="modal-body">
+                <pre id="codePreviewContent" style="background:var(--bg-tertiary);padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.5;max-height:70vh;font-family:'Fira Code',monospace"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- 截图查看弹窗 -->
+    <div id="screenshotModal" class="modal">
+        <div class="modal-backdrop" onclick="closeScreenshotModal()"></div>
+        <div class="modal-content modal-xl glass">
+            <div class="modal-header"><h3 id="screenshotTitle">📸 测试截图</h3><button class="modal-close" onclick="closeScreenshotModal()">&times;</button></div>
+            <div class="modal-body" id="screenshotGallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px"></div>
+        </div>
+    </div>
+
+    <!-- Floating Command Palette Button (v3.3) -->
+    <button class="fab-command" onclick="openCommandPalette()" title="命令面板 (Ctrl+K)">⌘</button>
+
+    <script src="app.js"></script>
+</body>
+</html>

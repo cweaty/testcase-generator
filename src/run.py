@@ -4,7 +4,7 @@ AI 测试用例生成器 v3.4 - 启动脚本
 """
 import socket
 import uvicorn
-from src.config import settings
+from .config import settings
 
 
 def find_available_port(preferred: int, fallback: int = 8088) -> int:
@@ -44,5 +44,5 @@ if __name__ == "__main__":
         print(f"  ⚠️  端口 {settings.port} 被占用，已切换到 {port}\n")
 
     # 使用直接导入方式避免 uvicorn 字符串加载的 lifespan 递归问题
-    from src.main import app
+    from .main import app
     uvicorn.run(app, host=settings.host, port=port)
