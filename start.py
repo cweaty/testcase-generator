@@ -34,7 +34,7 @@ if __name__ == "__main__":
     env_port = os.environ.get("PORT")
     port = int(env_port) if env_port else find_available_port(settings.port)
 
-    print(f"🧪 AI 测试用例生成器 v4.0")
+    print(f"🧪 AI 测试用例生成器 v4.1 (auth enabled)")
     print(f"   启动地址: http://0.0.0.0:{port}")
     print(f"   API 文档: http://0.0.0.0:{port}/docs")
 
