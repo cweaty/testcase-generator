@@ -13,13 +13,13 @@ router = APIRouter(prefix="/api", tags=["config"])
 
 @router.get("/config")
 async def get_config_api():
-    """获取当前 AI 配置"""
+    """获取当前 AI 配置（不返回完整 API 密钥）"""
     config = await get_all_config()
     api_key = config.get("ai_api_key", "")
     masked_key = api_key[:8] + "****" + api_key[-4:] if len(api_key) > 12 else "****"
     return {
         "ai_base_url": config.get("ai_base_url", ""),
-        "ai_api_key": api_key,
+        "ai_api_key": "",  # 不返回完整密钥
         "ai_api_key_masked": masked_key,
         "ai_api_key_set": bool(api_key),
         "ai_model": config.get("ai_model", "gpt-4o"),
