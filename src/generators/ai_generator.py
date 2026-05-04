@@ -183,25 +183,35 @@ def _validate_cases(cases: list) -> List[Dict[str, Any]]:
 class AITestCaseGenerator:
     """AI 测试用例生成器"""
 
-    def __init__(self, base_url: str = None, api_key: str = None, model: str = None, custom_prompt: str = None):
+    def __init__(self, base_url: str = None, api_key: str = None, model: str = None, custom_prompt: str = None, user_id: int = None):
         self._base_url = base_url
         self._api_key = api_key
         self._model = model
         self._custom_prompt = custom_prompt
+        self._user_id = user_id
         self._temperature = 0.3
         self._max_tokens = 16000
 
+    async def _get_config_value(self, key: str) -> str:
+        """获取配置值：优先用户级，回退全局"""
+        if self._user_id:
+            from ..database import get_user_config
+            val = await get_user_config(self._user_id, key)
+            if val:
+                return val
+        return await get_config(key)
+
     async def _get_client(self) -> tuple:
         """获取 AI 客户端配置"""
-        base_url = self._base_url or await get_config("ai_base_url") or "https://api.openai.com/v1"
-        api_key = self._api_key or await get_config("ai_api_key") or ""
-        model = self._model or await get_config("ai_model") or "gpt-4o"
+        base_url = self._base_url or await self._get_config_value("ai_base_url") or "https://api.openai.com/v1"
+        api_key = self._api_key or await self._get_config_value("ai_api_key") or ""
+        model = self._model or await self._get_config_value("ai_model") or "gpt-4o"
 
         if not api_key:
             raise ValueError("未配置 AI API Key，请在设置页面配置")
 
-        temp_str = await get_config("ai_temperature")
-        tokens_str = await get_config("ai_max_tokens")
+        temp_str = await self._get_config_value("ai_temperature")
+        tokens_str = await self._get_config_value("ai_max_tokens")
         self._temperature = float(temp_str) if temp_str else 0.3
         self._max_tokens = int(tokens_str) if tokens_str else 16000
 

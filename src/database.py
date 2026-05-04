@@ -226,6 +226,22 @@ async def init_db():
                 base_url TEXT DEFAULT '',
                 created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
             );
+
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL UNIQUE,
+                password_hash TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+            );
+
+            CREATE TABLE IF NOT EXISTS user_config (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                key TEXT NOT NULL,
+                value TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_user_config_uk ON user_config(user_id, key);
         """)
 
         # ---- FTS5 Full-Text Search (safe mode: standalone table, no triggers) ----
@@ -995,3 +1011,55 @@ async def get_database_stats() -> dict:
             stats[table] = row['cnt']
         stats['db_size_bytes'] = os.path.getsize(DB_PATH)
         return stats
+
+
+# ========== 用户操作 ==========
+
+async def create_user(username: str, password_hash: str) -> int:
+    """创建用户，返回用户 ID"""
+    async with get_db() as db:
+        cursor = await db.execute(
+            "INSERT INTO users (username, password_hash) VALUES (?, ?)",
+            (username, password_hash)
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
+    """根据用户名查找用户"""
+    async with get_db() as db:
+        cursor = await db.execute("SELECT * FROM users WHERE username = ?", (username,))
+        row = await cursor.fetchone()
+        return dict(row) if row else None
+
+
+async def get_user_config(user_id: int, key: str) -> Optional[str]:
+    """获取用户的配置项"""
+    async with get_db() as db:
+        cursor = await db.execute(
+            "SELECT value FROM user_config WHERE user_id = ? AND key = ?",
+            (user_id, key)
+        )
+        row = await cursor.fetchone()
+        return row["value"] if row else None
+
+
+async def get_all_user_config(user_id: int) -> Dict[str, str]:
+    """获取用户的所有配置"""
+    async with get_db() as db:
+        cursor = await db.execute(
+            "SELECT key, value FROM user_config WHERE user_id = ?", (user_id,)
+        )
+        rows = await cursor.fetchall()
+        return {r["key"]: r["value"] for r in rows}
+
+
+async def set_user_config(user_id: int, key: str, value: str):
+    """设置用户的配置项"""
+    async with get_db() as db:
+        await db.execute(
+            "INSERT OR REPLACE INTO user_config (user_id, key, value) VALUES (?, ?, ?)",
+            (user_id, key, value)
+        )
+        await db.commit()

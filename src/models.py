@@ -138,3 +138,17 @@ class TaskStatus(BaseModel):
     error: str = ""
     created_at: Optional[str] = None
     completed_at: Optional[str] = None
+
+
+# ========== 用户认证相关 ==========
+
+class UserRegister(BaseModel):
+    """用户注册请求"""
+    username: str = Field(..., min_length=3, max_length=50, description="用户名")
+    password: str = Field(..., min_length=6, max_length=100, description="密码")
+
+
+class UserLogin(BaseModel):
+    """用户登录请求"""
+    username: str = Field(..., description="用户名")
+    password: str = Field(..., description="密码")

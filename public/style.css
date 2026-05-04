@@ -1919,3 +1919,120 @@ nav { flex: 1; padding: 20px 16px; }
     .undo-bar { display: none !important; }
     .content { margin-left: 0 !important; padding: 0 !important; }
 }
+
+/* ========== 登录/注册页面 ========== */
+.auth-page {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    z-index: 9999;
+}
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
+}
+.auth-logo {
+    margin-bottom: 32px;
+}
+.auth-logo .logo-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 12px;
+}
+.auth-logo h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.auth-subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+.auth-card .form-group {
+    text-align: left;
+    margin-bottom: 16px;
+}
+.auth-card .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+.auth-card .form-group input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.auth-card .form-group input:focus {
+    border-color: var(--primary);
+}
+.auth-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 12px;
+}
+.auth-switch {
+    margin-top: 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+.auth-switch a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+.auth-switch a:hover {
+    text-decoration: underline;
+}
+
+/* ========== 用户信息栏 ========== */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+}
+.user-avatar {
+    font-size: 18px;
+}
+.user-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.btn-logout {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s;
+}
+.btn-logout:hover {
+    color: var(--danger);
+}

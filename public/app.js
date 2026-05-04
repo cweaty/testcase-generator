@@ -8,6 +8,107 @@
 // 本地开发时留空即可（使用相对路径，由同源服务器处理）
 const API_BASE = 'https://testcase-generator-production.up.railway.app';
 
+// ========== 认证管理 ==========
+function getToken() { return localStorage.getItem('tcg_token'); }
+function setToken(token) { localStorage.setItem('tcg_token', token); }
+function clearToken() { localStorage.removeItem('tcg_token'); }
+function getUser() { try { return JSON.parse(localStorage.getItem('tcg_user')); } catch { return null; } }
+function setUser(user) { localStorage.setItem('tcg_user', JSON.stringify(user)); }
+function clearUser() { localStorage.removeItem('tcg_user'); }
+
+function checkAuth() {
+    const token = getToken();
+    if (!token) {
+        showAuthPage();
+        return false;
+    }
+    showMainApp();
+    return true;
+}
+
+function showAuthPage() {
+    document.getElementById('authPage').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('authPage').style.display = 'none';
+    document.getElementById('mainApp').style.display = '';
+    const user = getUser();
+    if (user) document.getElementById('userName').textContent = user.username;
+}
+
+function switchToRegister() {
+    document.getElementById('authLoginForm').style.display = 'none';
+    document.getElementById('authRegisterForm').style.display = '';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('regError').style.display = 'none';
+}
+
+function switchToLogin() {
+    document.getElementById('authLoginForm').style.display = '';
+    document.getElementById('authRegisterForm').style.display = 'none';
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('regError').style.display = 'none';
+}
+
+async function doLogin() {
+    const username = document.getElementById('authUsername').value.trim();
+    const password = document.getElementById('authPassword').value;
+    const errEl = document.getElementById('authError');
+    if (!username || !password) { errEl.textContent = '请输入用户名和密码'; errEl.style.display = ''; return; }
+    errEl.style.display = 'none';
+    try {
+        const resp = await fetch(API_BASE + '/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '登录失败');
+        setToken(data.token);
+        setUser(data.user);
+        showMainApp();
+        loadQuickStats();
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.style.display = '';
+    }
+}
+
+async function doRegister() {
+    const username = document.getElementById('regUsername').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regPasswordConfirm').value;
+    const errEl = document.getElementById('regError');
+    if (!username || !password) { errEl.textContent = '请输入用户名和密码'; errEl.style.display = ''; return; }
+    if (password.length < 6) { errEl.textContent = '密码至少6个字符'; errEl.style.display = ''; return; }
+    if (password !== confirm) { errEl.textContent = '两次密码不一致'; errEl.style.display = ''; return; }
+    errEl.style.display = 'none';
+    try {
+        const resp = await fetch(API_BASE + '/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '注册失败');
+        setToken(data.token);
+        setUser(data.user);
+        showMainApp();
+    } catch (e) {
+        errEl.textContent = e.message;
+        errEl.style.display = '';
+    }
+}
+
+function doLogout() {
+    clearToken();
+    clearUser();
+    showAuthPage();
+    switchToLogin();
+}
+
 // ========== 全局状态 ==========
 let currentDocId = null;
 let allDocuments = [];
@@ -35,7 +136,13 @@ async function api(url, options = {}) {
     const fullUrl = API_BASE + url;
     const defaultHeaders = {};
     if (!(options.body instanceof FormData)) defaultHeaders['Content-Type'] = 'application/json';
+    const token = getToken();
+    if (token) defaultHeaders['Authorization'] = 'Bearer ' + token;
     const resp = await fetch(fullUrl, { ...options, headers: { ...defaultHeaders, ...options.headers } });
+    if (resp.status === 401) {
+        clearToken(); clearUser(); showAuthPage();
+        throw new Error('登录已过期，请重新登录');
+    }
     if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: '请求失败' }));
         throw new Error(err.detail || `HTTP ${resp.status}`);
@@ -910,7 +1017,7 @@ document.getElementById('startGenerateBtn').addEventListener('click', async () =
     };
     try {
         const resp = await fetch(API_BASE + '/api/testcases/generate/stream', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
             body: JSON.stringify(requestBody),
             signal: abortCtrl.signal
         });
@@ -1722,9 +1829,15 @@ function formatFileSize(b) { if (!b || b === 0) return ''; if (b < 1024) return 
 
 // ========== 初始化 ==========
 initTheme();
-loadDocuments();
-loadQuickStats();
-initGlobalDragDrop();
+if (checkAuth()) {
+    loadDocuments();
+    loadQuickStats();
+    initGlobalDragDrop();
+}
+
+// 登录/注册回车提交
+document.getElementById('authPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('regPasswordConfirm').addEventListener('keydown', e => { if (e.key === 'Enter') doRegister(); });
 
 // ========== 生成保护：离开页面警告 ==========
 window.addEventListener('beforeunload', (e) => {
@@ -1876,7 +1989,7 @@ async function startExecution() {
     try {
         const resp = await fetch(API_BASE + '/api/executor/run/stream', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
             body: JSON.stringify({ testcase_ids: ids, base_url: baseUrl, timeout: timeout })
         });
 

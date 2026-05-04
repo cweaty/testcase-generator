@@ -1,20 +1,32 @@
-"""配置 API 路由"""
+"""配置 API 路由（用户级配置）"""
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from ..models import AIConfig
-from ..database import get_all_config, set_config, log_operation
+from ..database import get_all_config, get_all_user_config, set_user_config, log_operation
+from ..auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["config"])
 
 
+async def _resolve_config(user_id: int) -> dict:
+    """获取用户配置，未设置的项回退到全局配置"""
+    global_cfg = await get_all_config()
+    user_cfg = await get_all_user_config(user_id)
+    # 用户配置优先，回退到全局
+    merged = {}
+    for key in ["ai_base_url", "ai_api_key", "ai_model", "ai_temperature", "ai_max_tokens"]:
+        merged[key] = user_cfg.get(key, global_cfg.get(key, ""))
+    return merged
+
+
 @router.get("/config")
-async def get_config_api():
-    """获取当前 AI 配置（不返回完整 API 密钥）"""
-    config = await get_all_config()
+async def get_config_api(current_user: dict = Depends(get_current_user)):
+    """获取当前用户的 AI 配置（不返回完整 API 密钥）"""
+    config = await _resolve_config(current_user["id"])
     api_key = config.get("ai_api_key", "")
     masked_key = api_key[:8] + "****" + api_key[-4:] if len(api_key) > 12 else "****"
     return {
@@ -29,22 +41,23 @@ async def get_config_api():
 
 
 @router.put("/config")
-async def update_config_api(config: AIConfig):
-    """更新 AI 配置"""
-    await set_config("ai_base_url", config.ai_base_url)
-    await set_config("ai_api_key", config.ai_api_key)
-    await set_config("ai_model", config.ai_model)
+async def update_config_api(config: AIConfig, current_user: dict = Depends(get_current_user)):
+    """更新当前用户的 AI 配置"""
+    uid = current_user["id"]
+    await set_user_config(uid, "ai_base_url", config.ai_base_url)
+    await set_user_config(uid, "ai_api_key", config.ai_api_key)
+    await set_user_config(uid, "ai_model", config.ai_model)
     if config.ai_temperature is not None:
-        await set_config("ai_temperature", str(config.ai_temperature))
+        await set_user_config(uid, "ai_temperature", str(config.ai_temperature))
     if config.ai_max_tokens is not None:
-        await set_config("ai_max_tokens", str(config.ai_max_tokens))
-    logger.info(f"AI 配置已更新: model={config.ai_model}, base_url={config.ai_base_url}")
-    await log_operation("config", "settings", None, f"更新AI配置: model={config.ai_model}")
+        await set_user_config(uid, "ai_max_tokens", str(config.ai_max_tokens))
+    logger.info(f"用户 {current_user['username']} AI 配置已更新: model={config.ai_model}")
+    await log_operation("config", "settings", None, f"用户 {current_user['username']} 更新AI配置: model={config.ai_model}")
     return {"message": "配置更新成功"}
 
 
 @router.post("/config/test")
-async def test_config_connection(data: dict):
+async def test_config_connection(data: dict, current_user: dict = Depends(get_current_user)):
     """测试 AI API 连接配置"""
     base_url = data.get("ai_base_url", "")
     api_key = data.get("ai_api_key", "")

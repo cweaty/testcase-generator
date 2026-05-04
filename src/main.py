@@ -19,6 +19,7 @@ from .database import init_db, pool
 
 # 导入路由模块
 from .routers import (
+    auth,
     documents,
     testcases,
     trash,
@@ -150,6 +151,7 @@ async def serve_index():
 
 
 # ========== 注册路由模块 ==========
+app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(testcases.router)
 app.include_router(trash.router)

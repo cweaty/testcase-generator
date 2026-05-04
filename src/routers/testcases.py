@@ -3,8 +3,10 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from fastapi.responses import StreamingResponse
+
+from ..auth import get_current_user
 
 from ..models import (
     TestCase, TestCaseUpdate, GenerateRequest, GenerateResponse,
@@ -80,7 +82,7 @@ async def _get_doc_content(document_id: int) -> tuple:
 # ========== 生成 API ==========
 
 @router.post("/testcases/generate", response_model=GenerateResponse)
-async def generate_testcases(request: Request, body: GenerateRequest):
+async def generate_testcases(request: Request, body: GenerateRequest, current_user: dict = Depends(get_current_user)):
     """根据文档 AI 生成测试用例"""
     client_ip = request.client.host if request else "unknown"
     if not generate_limiter.is_allowed(client_ip or "unknown"):
@@ -90,7 +92,7 @@ async def generate_testcases(request: Request, body: GenerateRequest):
     test_types = [t.value for t in body.test_types]
 
     custom_prompt = getattr(body, 'custom_prompt', None)
-    generator = AITestCaseGenerator(custom_prompt=custom_prompt)
+    generator = AITestCaseGenerator(custom_prompt=custom_prompt, user_id=current_user["id"])
 
     try:
         test_cases = await generator.generate(
@@ -118,13 +120,13 @@ async def generate_testcases(request: Request, body: GenerateRequest):
 
 
 @router.post("/testcases/generate/stream")
-async def generate_testcases_stream(request: GenerateRequest):
+async def generate_testcases_stream(request: GenerateRequest, current_user: dict = Depends(get_current_user)):
     """SSE 流式生成测试用例（真正的实时流式输出）"""
     content, doc_type = await _get_doc_content(request.document_id)
     test_types = [t.value for t in request.test_types]
     custom_prompt = getattr(request, 'custom_prompt', None)
 
-    generator = AITestCaseGenerator(custom_prompt=custom_prompt)
+    generator = AITestCaseGenerator(custom_prompt=custom_prompt, user_id=current_user["id"])
 
     async def event_stream():
         collected_cases = []
@@ -165,7 +167,7 @@ async def generate_testcases_stream(request: GenerateRequest):
 
 
 @router.post("/testcases/{tc_id}/regenerate")
-async def regenerate_single_testcase(tc_id: int):
+async def regenerate_single_testcase(tc_id: int, current_user: dict = Depends(get_current_user)):
     """重新生成单条测试用例"""
     tc = await get_testcase(tc_id)
     if not tc:
@@ -175,7 +177,7 @@ async def regenerate_single_testcase(tc_id: int):
     if not doc:
         raise HTTPException(status_code=404, detail="关联文档不存在")
 
-    generator = AITestCaseGenerator()
+    generator = AITestCaseGenerator(user_id=current_user["id"])
     try:
         new_cases = await generator.generate(
             content=doc["content"],
