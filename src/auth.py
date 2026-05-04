@@ -6,8 +6,8 @@ import os
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -18,21 +18,18 @@ SECRET_KEY = os.environ.get("JWT_SECRET", "testcase-generator-jwt-secret-key-cha
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 72  # 3 天过期
 
-# 密码哈希
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 # Bearer token 提取
 security = HTTPBearer(auto_error=False)
 
 
 def hash_password(password: str) -> str:
     """哈希密码"""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """验证密码"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
 
 
 def create_access_token(user_id: int, username: str) -> str:
