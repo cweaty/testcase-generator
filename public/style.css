@@ -143,18 +143,23 @@ body::before {
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 
-nav { flex: 1; padding: 20px 16px; }
+nav { flex: 1; padding: 20px 16px; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+nav::-webkit-scrollbar { width: 4px; }
+nav::-webkit-scrollbar-track { background: transparent; }
+nav::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 4px; }
+nav::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 .nav-item {
     display: flex; align-items: center; gap: 12px;
-    padding: 14px 18px;
+    padding: 12px 18px;
     color: var(--text-secondary);
     text-decoration: none;
     border-radius: var(--radius-sm);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     transition: var(--transition);
     font-size: 14px; font-weight: 500;
     position: relative; overflow: hidden;
+    white-space: nowrap;
 }
 
 .nav-item::before {
