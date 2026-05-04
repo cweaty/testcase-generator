@@ -15,24 +15,30 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 @router.post("/register")
 async def register(data: UserRegister):
     """用户注册"""
-    # 检查用户名是否已存在
-    existing = await get_user_by_username(data.username)
-    if existing:
-        raise HTTPException(status_code=400, detail="用户名已存在")
+    try:
+        # 检查用户名是否已存在
+        existing = await get_user_by_username(data.username)
+        if existing:
+            raise HTTPException(status_code=400, detail="用户名已存在")
 
-    # 创建用户
-    password_hash = hash_password(data.password)
-    user_id = await create_user(data.username, password_hash)
+        # 创建用户
+        password_hash = hash_password(data.password)
+        user_id = await create_user(data.username, password_hash)
 
-    # 自动登录，返回 token
-    token = create_access_token(user_id, data.username)
-    logger.info(f"新用户注册: {data.username} (id={user_id})")
+        # 自动登录，返回 token
+        token = create_access_token(user_id, data.username)
+        logger.info(f"新用户注册: {data.username} (id={user_id})")
 
-    return {
-        "message": "注册成功",
-        "token": token,
-        "user": {"id": user_id, "username": data.username},
-    }
+        return {
+            "message": "注册成功",
+            "token": token,
+            "user": {"id": user_id, "username": data.username},
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"注册失败: {type(e).__name__}: {e}")
+        raise HTTPException(status_code=500, detail=f"注册失败: {str(e)}")
 
 
 @router.post("/login")
