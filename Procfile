@@ -1,1 +1,1 @@
-web: python -m src.run
+web: python start.py
