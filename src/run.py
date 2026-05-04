@@ -2,6 +2,7 @@
 """
 AI 测试用例生成器 v3.4 - 启动脚本
 """
+import os
 import socket
 import uvicorn
 from .config import settings
@@ -45,4 +46,4 @@ if __name__ == "__main__":
 
     # 使用直接导入方式避免 uvicorn 字符串加载的 lifespan 递归问题
     from .main import app
-    uvicorn.run(app, host=settings.host, port=port)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", str(port))))

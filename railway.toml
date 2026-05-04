@@ -2,6 +2,6 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd src && python run.py"
+startCommand = "python -m src.run"
 healthcheckPath = "/docs"
 healthcheckTimeout = 300
