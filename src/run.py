@@ -30,7 +30,12 @@ def find_available_port(preferred: int, fallback: int = 8088) -> int:
 
 
 if __name__ == "__main__":
-    port = find_available_port(settings.port)
+    # Railway 等平台通过 PORT 环境变量指定端口
+    env_port = os.environ.get("PORT")
+    if env_port:
+        port = int(env_port)
+    else:
+        port = find_available_port(settings.port)
 
     print(f"""
 ╔══════════════════════════════════════════╗
@@ -41,9 +46,9 @@ if __name__ == "__main__":
 ╚══════════════════════════════════════════╝
     """)
 
-    if port != settings.port:
+    if not env_port and port != settings.port:
         print(f"  ⚠️  端口 {settings.port} 被占用，已切换到 {port}\n")
 
     # 使用直接导入方式避免 uvicorn 字符串加载的 lifespan 递归问题
     from .main import app
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", str(port))))
+    uvicorn.run(app, host="0.0.0.0", port=port)
