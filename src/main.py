@@ -108,13 +108,13 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """全局未知异常处理"""
-    logger.error(f"未处理异常: {exc}", exc_info=True)
+    logger.error(f"未处理异常: {type(exc).__name__}: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
         content={
             "error": True,
             "code": 500,
-            "detail": "服务器内部错误",
+            "detail": f"服务器内部错误: {type(exc).__name__}: {str(exc)}",
             "path": str(request.url.path),
             "timestamp": datetime.now().isoformat()
         }
