@@ -13,13 +13,16 @@ router = APIRouter(prefix="/api", tags=["config"])
 
 
 async def _resolve_config(user_id: int) -> dict:
-    """获取用户配置，未设置的项回退到全局配置"""
+    """获取用户配置，API密钥不回退全局，其他项回退"""
     global_cfg = await get_all_config()
     user_cfg = await get_all_user_config(user_id)
-    # 用户配置优先，回退到全局
     merged = {}
     for key in ["ai_base_url", "ai_api_key", "ai_model", "ai_temperature", "ai_max_tokens"]:
-        merged[key] = user_cfg.get(key, global_cfg.get(key, ""))
+        if key == "ai_api_key":
+            # API 密钥不回退到全局配置，避免多用户共享密钥
+            merged[key] = user_cfg.get(key, "")
+        else:
+            merged[key] = user_cfg.get(key, global_cfg.get(key, ""))
     return merged
 
 
